@@ -68,41 +68,11 @@ function love.update(dt)
     
     checkQuit()
 
---fruit eating
-
-    if snake.x == fruit.x and snake.y == fruit.y then
-        --debug.debug()
-        snake.eatFruit = true
-        print'fruit eat'
-        fruitRemove()
-        fruitRespawn()
-    end
-    
---snake expanding
-    if snake.eatFruit then
-        --torso expanding
-        for i = #snake.torso, 1, -1 do
-            snake.torso[i + 1] = {}
-            snake.torso[i + 1].x = snake.torso[i].x
-            snake.torso[i + 1].y = snake.torso[i].y
-            print ('torso '..(i+1)..' created')
-            if i == 1 then
-                snake.torso[i].x = snake.x
-                snake.torso[i].y = snake.y
-                print('first torso created')
-            end
-        end
-        snake.torso[1].x = snake.x
-        snake.torso[1].y = snake.y
-        print('snake head changed')
-    end
-    
-    if snake.eatFruit then
-        snake.eatFruit = false
-        print('eatFruit false')
-    end
+    fruitEat()
     
 end
+
+
 
 function love.draw()
     
@@ -171,9 +141,10 @@ function moveTowardDirection(i, j)
 
     moveTorso()
 
+    
     if snake.x < minWidth or snake.x > maxWidth  then        
         print 'x out'
---        snake.x = snake.startX
+    --snake.x = snake.startX
         love.load()
     end
 
@@ -187,7 +158,15 @@ function moveTowardDirection(i, j)
     
     snake.x  = snake.x + snake.dirX * moveUnit
     snake.y  = snake.y + snake.dirY * moveUnit
-       
+
+--collision check    
+    for i = 1, #snake.torso do
+        if snake.x == snake.torso[i].x and snake.y == snake.torso[i].y then
+            print ('collision X: '..snake.x..', '..snake.torso[i].x..' Y: '..snake.y..', '..snake.torso[i].y)
+            love.load()
+        end
+    end
+
 end
 
 function moveTorso()
@@ -201,8 +180,35 @@ function moveTorso()
         end
         
     end
-
+    
 end
+
+function fruitEat()
+--fruit eating
+
+    if snake.x == fruit.x and snake.y == fruit.y then
+        --debug.debug()
+        snake.eatFruit = true
+        print'eatFruit true'
+        fruitRemove()
+        fruitRespawn()
+    end
+    
+--snake expanding
+    if snake.eatFruit then
+        --torso expanding
+        local last_torso = {}
+        last_torso.x = snake.torso[#snake.torso].x
+        last_torso.y = snake.torso[#snake.torso].y
+
+        snake.torso[#snake.torso+1] = last_torso
+        
+        snake.eatFruit = false
+        print('eatFruit false')
+    end
+end
+
+
 
 function fruitRespawn()
     fruit.x = love.math.random(7) * moveUnit
@@ -210,7 +216,19 @@ function fruitRespawn()
     --nextSnake.x = fruit.x
     --nextSnake.y = fruit.y
     print('fruit : ', fruit.x, fruit.y)
+    fruitLocCheck()
+end
 
+function fruitLocCheck()
+    
+    for i = 1, #snake.torso do
+        if fruit.x == snake.torso[i].x and fruit.y == snake.torso[i].y then
+            print 'fruit respawning...'
+            fruitRespawn()
+            fruitLocCheck()
+        end
+    end
+    
 end
 
 function fruitRemove()
