@@ -29,7 +29,7 @@ function love.update(dt)
     end
 
     if state == 'game' then
-        game.update(dt)
+        game:update(dt)
     end
     
     checkQuit()

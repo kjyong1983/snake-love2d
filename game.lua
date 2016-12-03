@@ -1,9 +1,8 @@
 game = {}
 game.snake = {}
+gsnake = game.snake
 game.map = {}
 game.fruit = {}
-
---fruit = require 'fruit'
 
 function game:load()
     
@@ -20,7 +19,8 @@ function game:load()
     
     game.moveUnit = 50
     game.moveTime = 0.4
-  
+    game.difficult = 1
+    
     game.mapInitialize()
     
     game.snake.spr = game.cube
@@ -30,15 +30,18 @@ function game:load()
     game.snake.y = game.snake.startY
     game.snake.dirX = 0
     game.snake.dirY = -1
+    game.snake.lastDirX = 0
+    game.snake.lastDirY = -1
     
     game.snake.torso = { }
+    
     game.snake.torso[1] = {}
-    game.snake.torso[1].x = game.snake.startX + 1 * game.moveUnit;
-    game.snake.torso[1].y = game.snake.startY;
+    game.snake.torso[1].x = game.snake.startX;
+    game.snake.torso[1].y = game.snake.startY + 1 * game.moveUnit;
     
     game.snake.torso[2] = {}
-    game.snake.torso[2].x = game.snake.startX + 2 * game.moveUnit;
-    game.snake.torso[2].y = game.snake.startY;
+    game.snake.torso[2].x = game.snake.startX;
+    game.snake.torso[2].y = game.snake.startY + 2 * game.moveUnit;
     
     
     game.snake.eatFruit = false
@@ -47,27 +50,31 @@ function game:load()
     game.fruitRespawn()
     
     game.score = 0
+    game.play = true
     
     game.elapsedTime = 0
-    game.dt = 0
+    
 end
 
 function game:update(dt)
 --movements
-    local dt = love.timer.getDelta()
+    --local dt = love.timer.getDelta()
     game.elapsedTime = game.elapsedTime + dt;
     game.getMoveKey()
     
-    if game.elapsedTime >= game.moveTime then
+    if game.elapsedTime >= game.moveTime / game.difficult and game.play then
         game.move()
         
         if game.snake.eatFruit == true then
-            --snake.eatFruit = false
             game.fruitRespawn()
         end
         
         --print('move')
         game.elapsedTime = 0;
+        if game.difficult < 10 then
+            game.difficult = game.difficult + 0.02
+        end
+        --print(game.difficult)
     end
     
     game.checkQuit()
@@ -87,51 +94,42 @@ function game.draw()
         love.graphics.draw(game.snake.spr, game.snake.torso[i].x, game.snake.torso[i].y, 0, 1, 1)
     end
     
-    love.graphics.print('score : '..game.score, game.maxWidth - 100, game.minHeight + 100, 0, 1, 1)
+    love.graphics.print('score : '..game.score, game.maxWidth - 100, game.minHeight + 50, 0, 1, 1)
+    
+    if game.play == false then
+        love.graphics.print('G  A   M   E   O   V   E   R', 100, 400, 0, 4, 4)
+        love.graphics.print('Press R to restart', 350, 500, 0, 1, 1)
+    end
     
 end
-
-
-
 
 --snake movements
 
 function game.getMoveKey()
-    if love.keyboard.isDown('w') then
-        game.setDirection(0, -1)
-    end
-    if love.keyboard.isDown('up') then
+    if love.keyboard.isDown('w') or love.keyboard.isDown('up') then
         game.setDirection(0, -1)
     end
     
-    if love.keyboard.isDown('s') then
-        game.setDirection(0, 1)
-    end
-    if love.keyboard.isDown('down') then
+    if love.keyboard.isDown('s') or love.keyboard.isDown('down') then
         game.setDirection(0, 1)
     end
     
-    if love.keyboard.isDown('a') then
-        game.setDirection(-1, 0)
-    end
-    if love.keyboard.isDown('left') then
+    if love.keyboard.isDown('a') or love.keyboard.isDown('left') then
         game.setDirection(-1, 0)
     end
     
-    if love.keyboard.isDown('d') then
-        game.setDirection(1, 0)
-    end
-    if love.keyboard.isDown('right') then
+    if love.keyboard.isDown('d') or love.keyboard.isDown('right') then
         game.setDirection(1, 0)
     end
 
 end
 
 function game.setDirection(i, j)
-    if game.snake.dirX == -i and game.snake.dirY == j then
+    
+    if game.snake.lastDirX == -i and game.snake.lastDirY == j then
         return
     end
-    if game.snake.dirX == i and game.snake.dirY == -j then
+    if game.snake.lastDirX == i and game.snake.lastDirY == -j then
         return
     end
     
@@ -145,26 +143,33 @@ function game.move(i, j)
    
     if game.snake.x < game.minWidth or game.snake.x > game.maxWidth  then        
         print 'x out'
-    --snake.x = snake.startX
-        game.load()
+        game.play = false
+        --game.load()
     end
 
     if game.snake.y < game.minHeight or game.snake.y > game.maxHeight then
         print 'y out'
-        --snake.y = snake.startY
-        game.load()
+        game.play = false
+        --game.load()
     end
 
     --print(snake.x, snake.y, minWidth, maxWidth, minHeight, maxHeight)
     
+    local lastX = game.snake.x
+    local lastY = game.snake.y
+    
     game.snake.x  = game.snake.x + game.snake.dirX * game.moveUnit
     game.snake.y  = game.snake.y + game.snake.dirY * game.moveUnit
 
+    game.snake.lastDirX = (game.snake.x - lastX) / game.moveUnit
+    game.snake.lastDirY = (game.snake.y - lastY) / game.moveUnit
+    
 --collision check    
     for i = 1, #game.snake.torso do
         if game.snake.x == game.snake.torso[i].x and game.snake.y == game.snake.torso[i].y then
             print ('collision X: '..game.snake.x..', '..game.snake.torso[i].x..' Y: '..game.snake.y..', '..game.snake.torso[i].y)
-            game.load()
+            game.play = false
+            --game.load()
             break
         end
     end
@@ -216,8 +221,6 @@ end
 function game.fruitRespawn()
     game.fruit.x = love.math.random(7) * game.moveUnit
     game.fruit.y = love.math.random(7) * game.moveUnit  
-    --nextSnake.x = fruit.x
-    --nextSnake.y = fruit.y
     print('fruit : ', game.fruit.x, game.fruit.y)
     game.fruitLocCheck()
 end
@@ -245,6 +248,7 @@ function game.fruitRemove()
     game.fruit.y = nil
 end
 
+--not used
 function game.mapInitialize()
     for i = 1, 8 do
         game.map[i] = {}
