@@ -8,6 +8,6 @@ function love.conf(t)
     t.window.minheight = 800
     t.window.borderless = true
     t.window.resizable = false
-    t.console = true
+    t.console = false
     
 end
